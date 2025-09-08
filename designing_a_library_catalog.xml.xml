@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<LibraryCatalog>
+    <Book>
+        <Title>Principles of Database Management: The Practical Guide to Storing, Managing and Analyzing Big and Small Data</Title>
+        <Author>Lemahieu, W., Vanden Broucke, S., Baesens, B.</Author>
+        <Publisher>Cambridge University Press</Publisher>
+        <PublicationYear>2018</PublicationYear>
+        <ISBN>9781107186125</ISBN>
+        <Course>Data Storage Technologies</Course>
+    </Book>
+
+    <Book>
+        <Title>Introduction to Data Mining</Title>
+        <Author>Tan, P.-N., Steinbach, M., Karpatne, A., Kumar, V.</Author>
+        <Publisher>Pearson</Publisher>
+        <PublicationYear>2018</PublicationYear>
+        <ISBN>9780133128901</ISBN>
+        <Course>Data Mining and Transformation</Course>
+    </Book>
+
+    <Book>
+        <Title>Making Sense of Data II: A Practical Guide to Data Visualization, Advanced Data Mining Methods, and Applications</Title>
+        <Author>Glenn J. Myatt, Wayne P. Johnson</Author>
+        <Publisher>Wiley</Publisher>
+        <PublicationYear>2009</PublicationYear>
+        <ISBN>9780470222805</ISBN>
+        <Course>Data Visualization and Predictive Modeling</Course>
+    </Book>
+    
+    <Book>
+        <Title>Python for Data Analysis</Title>
+        <Author>Wes McKinney</Author>
+        <Publisher>O'Reilly Media</Publisher>
+        <PublicationYear>2017</PublicationYear>
+        <ISBN>9781491957660</ISBN>
+        <Course>Programming for Data Science</Course>
+    </Book>
+
+    <Book>
+        <Title>Database Systems: A Practical Approach to Design, Implementation, and Management</Title>
+        <Author>Thomas Connolly, Carolyn Begg</Author>
+        <Publisher>Pearson</Publisher>
+        <PublicationYear>2015</PublicationYear>
+        <ISBN>9780132943260</ISBN>
+        <Course>Data Storage Technologies</Course>
+    </Book>
+</LibraryCatalog>
