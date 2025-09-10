@@ -1,0 +1,490 @@
+-- project title: “Designing, Implementing, and Optimizing a Database Storage System for Integrated Patient Care & Chronic Disease Analytics in Urban Health Network”
+
+-- Deliverable 2: Database Implementation and Indexing Strategy
+
+-- Component 1: Schema (SQL CREATE TABLE statements)
+
+-- Step 1: Creating the database
+
+CREATE DATABASE IF NOT EXISTS uhn_care_db;
+USE uhn_care_db;
+
+-- Step 2: Creating master tables
+
+CREATE TABLE patient (
+    patient_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    dob DATE,
+    gender ENUM('Male','Female','Other'),
+    phone VARCHAR(20),
+    email VARCHAR(100),
+    address VARCHAR(200)
+);
+
+CREATE TABLE clinic (
+    clinic_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100),
+    location VARCHAR(200),
+    phone VARCHAR(20)
+);
+
+CREATE TABLE provider (
+    provider_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    specialty VARCHAR(100),
+    clinic_id INT,
+    FOREIGN KEY (clinic_id) REFERENCES clinic(clinic_id)
+);
+
+CREATE TABLE insurance_payer (
+    payer_id INT AUTO_INCREMENT PRIMARY KEY,
+    payer_name VARCHAR(100),
+    plan_type VARCHAR(50)
+);
+
+CREATE TABLE patient_insurance (
+    patient_id INT,
+    payer_id INT,
+    policy_number VARCHAR(50),
+    PRIMARY KEY (patient_id, payer_id),
+    FOREIGN KEY (patient_id) REFERENCES patient(patient_id),
+    FOREIGN KEY (payer_id) REFERENCES insurance_payer(payer_id)
+);
+
+
+-- Step 3: Creating Health conditions and diagnosis related tables.
+
+CREATE TABLE condition_master (
+    condition_id INT AUTO_INCREMENT PRIMARY KEY,
+    condition_name VARCHAR(100),
+    icd10_code VARCHAR(20)
+);
+
+CREATE TABLE patient_condition (
+    patient_id INT,
+    condition_id INT,
+    diagnosed_date DATE,
+    PRIMARY KEY (patient_id, condition_id),
+    FOREIGN KEY (patient_id) REFERENCES patient(patient_id),
+    FOREIGN KEY (condition_id) REFERENCES condition_master(condition_id)
+);
+
+CREATE TABLE encounter (
+    encounter_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT,
+    provider_id INT,
+    clinic_id INT,
+    encounter_date DATETIME,
+    reason VARCHAR(200),
+    notes TEXT,
+    FOREIGN KEY (patient_id) REFERENCES patient(patient_id),
+    FOREIGN KEY (provider_id) REFERENCES provider(provider_id),
+    FOREIGN KEY (clinic_id) REFERENCES clinic(clinic_id)
+);
+
+CREATE TABLE diagnosis (
+    diagnosis_id INT AUTO_INCREMENT PRIMARY KEY,
+    encounter_id INT,
+    condition_id INT,
+    diagnosis_date DATE,
+    FOREIGN KEY (encounter_id) REFERENCES encounter(encounter_id),
+    FOREIGN KEY (condition_id) REFERENCES condition_master(condition_id)
+);
+
+-- Step 4: Creating Labs related, vitals, medication related tables.
+
+CREATE TABLE lab_test (
+    test_id INT AUTO_INCREMENT PRIMARY KEY,
+    test_name VARCHAR(100),
+    unit VARCHAR(20),
+    normal_range VARCHAR(50)
+);
+
+CREATE TABLE lab_result (
+    result_id INT AUTO_INCREMENT PRIMARY KEY,
+    encounter_id INT,
+    test_id INT,
+    result_value DECIMAL(10,2),
+    result_date DATE,
+    FOREIGN KEY (encounter_id) REFERENCES encounter(encounter_id),
+    FOREIGN KEY (test_id) REFERENCES lab_test(test_id)
+);
+
+CREATE TABLE vital_sign (
+    vital_id INT AUTO_INCREMENT PRIMARY KEY,
+    encounter_id INT,
+    height_cm DECIMAL(5,2),
+    weight_kg DECIMAL(5,2),
+    blood_pressure VARCHAR(10),
+    heart_rate INT,
+    FOREIGN KEY (encounter_id) REFERENCES encounter(encounter_id)
+);
+
+CREATE TABLE medication (
+    medication_id INT AUTO_INCREMENT PRIMARY KEY,
+    medication_name VARCHAR(100),
+    category VARCHAR(50)
+);
+
+CREATE TABLE medication_order (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    encounter_id INT,
+    medication_id INT,
+    dosage VARCHAR(50),
+    start_date DATE,
+    end_date DATE,
+    status ENUM('Active','Completed','Discontinued'),
+    FOREIGN KEY (encounter_id) REFERENCES encounter(encounter_id),
+    FOREIGN KEY (medication_id) REFERENCES medication(medication_id)
+);
+
+
+
+
+
+
+
+-- project title: “Designing, Implementing, and Optimizing a Database Storage System for Integrated Patient Care & Chronic Disease Analytics in Urban Health Network”
+
+-- Deliverable 2: Database Implementation and Indexing Strategy
+
+-- Component 2: Indexing Strategy (SQL CREATE INDEX statements)
+
+
+-- Indexes for patient lookups
+CREATE INDEX idx_patient_name ON patient(last_name, first_name);
+
+-- Index for provider searches by specialty
+CREATE INDEX idx_provider_specialty ON provider(specialty);
+
+-- Speed up encounters by patient & date
+CREATE INDEX idx_encounter_patient_date ON encounter(patient_id, encounter_date);
+
+-- Speed up diagnosis queries for chronic conditions
+CREATE INDEX idx_diagnosis_condition ON diagnosis(condition_id);
+
+-- Speed up lab result queries by patient & test
+CREATE INDEX idx_lab_result_test_date ON lab_result(test_id, result_date);
+
+-- Speed up medication adherence tracking
+CREATE INDEX idx_medication_order_status ON medication_order(status, start_date);
+
+-- Full-text search for encounter notes
+CREATE FULLTEXT INDEX idx_encounter_notes ON encounter(reason, notes);
+
+
+
+
+
+
+-- Project Title: “Designing, Implementing, and Optimizing a Database Storage System for Integrated Patient Care & Chronic Disease Analytics in Urban Health Network”
+
+-- Deliverable 3: Data Population and Query Optimization
+
+-- Component 1: Data Population
+
+
+
+-- Inserting Patients data
+INSERT INTO patient (first_name, last_name, dob, gender, phone, email, `address`)
+VALUES 
+('Brian', 'Reed', '1982-11-02', 'Male', '586-550-1111', 'brianreed@gmail.com', '1234 Main St'),
+('Craig', 'Smith', '1978-12-10', 'Male', '586-555-3134', 'craigsmith@gmail.com', '2401 Ronnen Drive'),
+('Maria', 'Chowdhury', '1992-08-28', 'Female', '586-304-2071', 'mariachowdhury@gmail.com', '4562 Oak Ave'),
+('Rebecca', 'Mielke', '1986-05-13', 'Female', '248-301-3333', 'rebeccamielke@gmail.com', '1789 Pine Rd'),
+('Sandra', 'Gorgees', '1995-07-18', 'Female', '586-550-3214', 'sandragorgees@gmail.com', '1162 McDougall St');
+
+
+-- Inserting Clinics data
+INSERT INTO clinic (`name`, `location`, phone)
+VALUES
+('Corewell Health Beaumont', '44201 Dequinder Rd', '248-964-5000'),
+('Henry Ford Hospital', '2825 Livernois Rd', '248-680-6000'),
+('Hamtramck Urgent Care', '101 Conant St', '313-555-4000');
+
+
+-- Inserting Providers data
+INSERT INTO provider (first_name, last_name, specialty, clinic_id)
+VALUES
+('Alice', 'Brown', 'Cardiology', 1),
+('Michael', 'Green', 'Endocrinology', 2);
+
+
+-- Inserting Insurance Payers data
+INSERT INTO insurance_payer (payer_name, plan_type)
+VALUES
+('Blue Cross', 'PPO'),
+('Medicare', 'Government');
+
+
+-- Map Patients to Insurance
+INSERT INTO patient_insurance (patient_id, payer_id, policy_number)
+VALUES
+(1, 1, 'BC12345'),
+(2, 2, 'MC67890');
+
+
+-- Inserting Conditions data
+INSERT INTO condition_master (condition_name, icd10_code)
+VALUES
+('Hypertension', 'I10'),
+('Diabetes Type 2', 'E11');
+
+
+-- Inserting Patient Conditions data
+INSERT INTO patient_condition (patient_id, condition_id, diagnosed_date)
+VALUES
+(1, 1, '2015-06-10'),
+(2, 2, '2020-09-15');
+
+
+-- Inserting Encounters data
+INSERT INTO encounter (patient_id, provider_id, clinic_id, encounter_date, reason, notes)
+VALUES
+(1, 1, 1, '2025-01-05 09:00:00', 'Routine checkup', 'Patient stable, blood pressure slightly elevated'),
+(2, 2, 2, '2019-07-10 10:30:00', 'Diabetes follow-up', 'Patient reports stable glucose levels');
+
+
+-- Inserting Diagnosis data
+INSERT INTO diagnosis (encounter_id, condition_id, diagnosis_date)
+VALUES
+(1, 1, '2025-01-05'),
+(2, 2, '2019-07-10');
+
+
+-- Inserting Lab Tests data
+INSERT INTO lab_test (test_name, unit, normal_range)
+VALUES
+('Glucose', 'mg/dL', '70-99'),
+('Cholesterol', 'mg/dL', '<200');
+
+
+-- Inserting Lab Results data
+INSERT INTO lab_result (encounter_id, test_id, result_value, result_date)
+VALUES
+(2, 1, 145.00, '2019-07-10'),
+(1, 2, 210.00, '2025-01-05');
+
+
+-- Inserting Vitals data
+INSERT INTO vital_sign (encounter_id, height_cm, weight_kg, blood_pressure, heart_rate)
+VALUES
+(1, 175.0, 82.5, '140/90', 78),
+(2, 160.0, 70.0, '130/85', 80);
+
+
+-- Inserting Medications data
+INSERT INTO medication (medication_name, category)
+VALUES
+('Lisinopril', 'Antihypertensive'),
+('Metformin', 'Antidiabetic');
+
+
+-- Inserting Medication Orders data
+INSERT INTO medication_order (encounter_id, medication_id, dosage, start_date, end_date, status)
+VALUES
+(1, 1, '10mg daily', '2025-01-05', '2025-02-05', 'Active'),
+(2, 2, '500mg twice daily', '2019-07-10', '2019-08-10', 'Active');
+
+
+
+
+
+
+-- Project Title: “Designing, Implementing, and Optimizing a Database Storage System for Integrated Patient Care & Chronic Disease Analytics in Urban Health Network”
+
+-- Deliverable 3: Data Population and Query Optimization
+
+-- Component 2: Query Optimization
+
+
+-- Query 1: Retrieve a patient’s complete medical history with encounters, diagnoses, and lab results
+SELECT p.first_name, p.last_name, 
+       e.encounter_date, 
+       d.diagnosis_date, cm.condition_name,
+       lt.test_name, lr.result_value, lr.result_date
+FROM patient p
+JOIN encounter e 
+    ON p.patient_id = e.patient_id
+LEFT JOIN diagnosis d 
+    ON e.encounter_id = d.encounter_id
+LEFT JOIN condition_master cm 
+    ON d.condition_id = cm.condition_id
+LEFT JOIN lab_result lr 
+    ON e.encounter_id = lr.encounter_id
+LEFT JOIN lab_test lt 
+    ON lr.test_id = lt.test_id
+WHERE p.patient_id = 2
+ORDER BY e.encounter_date DESC;
+
+
+-- Query 2: Find the average lab result for glucose by patient (monitor chronic disease trends)
+SELECT p.first_name, p.last_name, 
+       AVG(lr.result_value) AS avg_glucose
+FROM lab_result lr
+JOIN lab_test lt 
+    ON lr.test_id = lt.test_id
+JOIN encounter e 
+    ON lr.encounter_id = e.encounter_id
+JOIN patient p 
+    ON e.patient_id = p.patient_id
+WHERE lt.test_name = 'Glucose'
+GROUP BY p.patient_id;
+
+
+-- Query 3: Count how many patients have each chronic condition (analytics report)
+SELECT cm.condition_name, 
+       COUNT(pc.patient_id) AS patient_count
+FROM patient_condition pc
+JOIN condition_master cm 
+    ON pc.condition_id = cm.condition_id
+GROUP BY cm.condition_name;
+
+
+-- Query 4: Identify patients with uncontrolled hypertension (BP > 140/90)
+SELECT p.first_name, p.last_name, 
+       v.blood_pressure, 
+       e.encounter_date
+FROM vital_sign v
+JOIN encounter e 
+    ON v.encounter_id = e.encounter_id
+JOIN patient p 
+    ON e.patient_id = p.patient_id
+WHERE CAST(SUBSTRING_INDEX(v.blood_pressure, '/', 1) AS UNSIGNED) > 140
+   OR CAST(SUBSTRING_INDEX(v.blood_pressure, '/', -1) AS UNSIGNED) > 90;
+
+
+-- Query 5: List all active medications for a given patient
+SELECT p.first_name, p.last_name, 
+       m.medication_name, mo.dosage, 
+       mo.start_date, mo.end_date
+FROM medication_order mo
+JOIN medication m 
+    ON mo.medication_id = m.medication_id
+JOIN encounter e 
+    ON mo.encounter_id = e.encounter_id
+JOIN patient p 
+    ON e.patient_id = p.patient_id
+WHERE mo.status = 'Active' 
+  AND p.patient_id = 2;
+
+
+
+
+
+
+
+-- Project Title: “Designing, Implementing, and Optimizing a Database Storage System for Integrated Patient Care & Chronic Disease Analytics in Urban Health Network”
+
+-- For Deliverable 4 : Final Integration and Testing
+
+-- Component 1: Validating SQL Scripts to Verify Data Integrity
+
+-- 1. Checking the patient table population
+--    Ensures patient records are properly inserted.
+SELECT * 
+FROM patient;
+
+
+-- 2. Verifying referential integrity for encounters
+-- Confirms that every encounter links to a valid patient, provider, and clinic.
+SELECT e.encounter_id, 
+       p.first_name AS patient_name, 
+       pr.first_name AS provider_name, 
+       c.name AS clinic_name
+FROM encounter e
+JOIN patient p ON e.patient_id = p.patient_id
+JOIN provider pr ON e.provider_id = pr.provider_id
+JOIN clinic c ON e.clinic_id = c.clinic_id;
+
+
+-- 3. Verifying patient–condition relationships
+-- Ensures no orphan records exist in patient_condition table.
+SELECT pc.patient_id,
+       p.first_name AS patient_name,
+       cm.condition_name
+FROM patient_condition pc
+JOIN patient p ON pc.patient_id = p.patient_id
+JOIN condition_master cm ON pc.condition_id = cm.condition_id;
+
+
+
+-- 4. Verifying medication order relationships
+-- Confirms medication orders correctly link to patients, encounters, and medications.
+SELECT mo.encounter_id,
+       p.first_name AS patient_name,
+       m.medication_name,
+       mo.status
+FROM medication_order mo
+JOIN encounter e ON mo.encounter_id = e.encounter_id
+JOIN patient p ON e.patient_id = p.patient_id
+JOIN medication m ON mo.medication_id = m.medication_id;
+
+
+
+-- 5. Checking for null foreign keys in encounter table
+--    Ensures all encounters have valid patient, provider, and clinic references.
+--    Expected Result: ZERO rows returned if referential integrity is correct.
+SELECT * 
+FROM encounter 
+WHERE patient_id IS NULL 
+   OR provider_id IS NULL 
+   OR clinic_id IS NULL;
+
+
+
+
+
+
+
+-- Project Title: “Designing, Implementing, and Optimizing a Database Storage System for Integrated Patient Care & Chronic Disease Analytics in Urban Health Network”
+
+-- For Deliverable 4 : Final Integration and Testing
+
+-- Component 2: Testing Optimized Queries
+
+-- Testing Query 1: Patient’s complete medical history i.e- Patient with ID = 2
+SELECT p.first_name, p.last_name, e.encounter_date, cm.condition_name, 
+       lt.test_name, lr.result_value
+FROM patient p
+JOIN encounter e ON p.patient_id = e.patient_id
+LEFT JOIN diagnosis d ON e.encounter_id = d.encounter_id
+LEFT JOIN condition_master cm ON d.condition_id = cm.condition_id
+LEFT JOIN lab_result lr ON e.encounter_id = lr.encounter_id
+LEFT JOIN lab_test lt ON lr.test_id = lt.test_id
+WHERE p.patient_id = 2;
+
+-- Testing Query 2: Average glucose per patient
+SELECT p.first_name, p.last_name, 
+       AVG(lr.result_value) AS avg_glucose
+FROM lab_result lr
+JOIN lab_test lt ON lr.test_id = lt.test_id
+JOIN encounter e ON lr.encounter_id = e.encounter_id
+JOIN patient p ON e.patient_id = p.patient_id
+WHERE lt.test_name = 'Glucose'
+GROUP BY p.patient_id, p.first_name, p.last_name;
+
+-- Testing Query 3: Chronic condition counts across patients
+SELECT cm.condition_name, 
+       COUNT(pc.patient_id) AS patient_count
+FROM patient_condition pc
+JOIN condition_master cm ON pc.condition_id = cm.condition_id
+GROUP BY cm.condition_name;
+
+-- Testing Query 4: Patients with uncontrolled hypertension
+SELECT p.first_name, p.last_name, v.blood_pressure, e.encounter_date
+FROM vital_sign v
+JOIN encounter e ON v.encounter_id = e.encounter_id
+JOIN patient p ON e.patient_id = p.patient_id
+WHERE CAST(SUBSTRING_INDEX(v.blood_pressure, '/', 1) AS UNSIGNED) > 140
+   OR CAST(SUBSTRING_INDEX(v.blood_pressure, '/', -1) AS UNSIGNED) > 90;
+
+-- Testing Query 5: Active medications per patient
+SELECT p.first_name, p.last_name, m.medication_name, mo.dosage
+FROM medication_order mo
+JOIN medication m ON mo.medication_id = m.medication_id
+JOIN encounter e ON mo.encounter_id = e.encounter_id
+JOIN patient p ON e.patient_id = p.patient_id
+WHERE mo.status = 'Active';
